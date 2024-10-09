@@ -35,19 +35,19 @@ class RFC1034:
     digit = "[0-9]"
     letter = "[A-Za-z]"
     let_dig = "[0-9A-Za-z]"
-    let_dig_hyp = "[0-9A-Za-z\-]"
+    let_dig_hyp = r"[0-9A-Za-z\-]"
     assert "\\" in let_dig_hyp
     ldh_str = "%s+" % let_dig_hyp
     label = "(?:%s|%s|%s)" % (
             letter,
             letter + let_dig,
             letter + ldh_str + let_dig)
-    subdomain = "(?:%s\.)*(?:%s)" % (label, label)
+    subdomain = r"(?:%s\.)*(?:%s)" % (label, label)
     domain = "( |%s)" % (subdomain)
 
     def test_sanity(self):
         "Basic smoke tests that definitions transcribed OK"
-        match = re.compile("^%s\Z" % self.domain).match
+        match = re.compile(r"^%s\Z" % self.domain).match
         assert match("A.ISI.EDU")
         assert match("XX.LCS.MIT.EDU")
         assert match("SRI-NIC.ARPA")
@@ -74,12 +74,12 @@ class RFC1123:
     # n.b.: there are length limits in the real thing
     label = "{let_dig}(?:(?:{let_dig_hyp}+)?{let_dig})?".format(
             let_dig=RFC1034.let_dig, let_dig_hyp=RFC1034.let_dig_hyp)
-    subdomain = "(?:%s\.)*(?:%s)" % (label, label)
+    subdomain = r"(?:%s\.)*(?:%s)" % (label, label)
     domain = "( |%s)" % (subdomain)
 
     def test_sanity(self):
         "Basic smoke tests that definitions transcribed OK"
-        match = re.compile("^%s\Z" % self.domain).match
+        match = re.compile(r"^%s\Z" % self.domain).match
         assert match("A.ISI.EDU")
         assert match("XX.LCS.MIT.EDU")
         assert match("SRI-NIC.ARPA")
@@ -241,7 +241,7 @@ class TestDefinitions(object):
                               ; whitespace DQUOTE, comma, semicolon,
                               ; and backslash
         """
-        match = re.compile("^[%s]+\Z" % Definitions.COOKIE_OCTET).match
+        match = re.compile(r"^[%s]+\Z" % Definitions.COOKIE_OCTET).match
         for c in RFC5234.CTL:
             assert not match(c)
             assert not match("a%sb" % c)
@@ -331,7 +331,7 @@ class TestDefinitions(object):
             ('frob', 'laz', '')]
 
         def assert_correct(s):
-            #naive = re.findall(" *([^;]+)=([^;]+) *(?:;|\Z)", s)
+            #naive = re.findall(r" *([^;]+)=([^;]+) *(?:;|\Z)", s)
             result = regex.findall(s)
             assert result == correct
         # normal-looking case should work normally
@@ -411,7 +411,7 @@ class TestDefinitions(object):
     def test_max_age_av(self):
         "Smoke test Definitions.MAX_AGE_AV"
         # Not a lot to this, it's just digits
-        match = re.compile("^%s\Z" % Definitions.MAX_AGE_AV).match
+        match = re.compile(r"^%s\Z" % Definitions.MAX_AGE_AV).match
         assert not match("")
         assert not match("Whiskers")
         assert not match("Max-Headroom=992")
@@ -424,7 +424,7 @@ class TestDefinitions(object):
 
     def test_label(self, check_unicode=False):
         "Test label, as used in Domain attribute"
-        match = re.compile("^(%s)\Z" % Definitions.LABEL).match
+        match = re.compile(r"^(%s)\Z" % Definitions.LABEL).match
         for i in range(0, 10):
             assert match(str(i))
         assert not match(".")
@@ -459,7 +459,7 @@ class TestDefinitions(object):
             assert match(domain)
 
         # Now same tests through DOMAIN_AV
-        match = re.compile("^%s\Z" % Definitions.DOMAIN_AV).match
+        match = re.compile(r"^%s\Z" % Definitions.DOMAIN_AV).match
         for domain in bad_domains:
             assert not match("Domain=%s" % domain)
         for domain in good_domains:
@@ -487,7 +487,7 @@ class TestDefinitions(object):
         for path in good_paths:
             assert match(path)
 
-        match = re.compile("^%s\Z" % Definitions.PATH_AV).match
+        match = re.compile(r"^%s\Z" % Definitions.PATH_AV).match
         for path in bad_paths:
             assert not match("Path=%s" % path)
         for path in good_paths:
@@ -575,7 +575,7 @@ class TestDefinitions(object):
         # dependencies, and odds are good that other implementations are loose.
         # so this parser is also loose. "liberal in what you accept,
         # conservative in what you produce"
-        match = re.compile("^%s\Z" % Definitions.EXPIRES_AV).match
+        match = re.compile(r"^%s\Z" % Definitions.EXPIRES_AV).match
         assert not match("")
         assert not match("Expires=")
 
@@ -610,7 +610,7 @@ class TestDefinitions(object):
 
         If this works, then ATTR should work
         """
-        match = re.compile("^[%s]+\Z" % Definitions.EXTENSION_AV).match
+        match = re.compile(r"^[%s]+\Z" % Definitions.EXTENSION_AV).match
         assert match("Expires=Sun, 06 Nov 1994 08:49:37 GMT")
         assert match("Expires=Sunday, 06-Nov-94 08:49:37 GMT")
         assert match("Expires=Sun Nov  6 08:49:37 1994")

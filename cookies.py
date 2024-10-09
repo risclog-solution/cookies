@@ -132,7 +132,7 @@ class Definitions(object):
     # attribute and extract it appropriately.
     # As compared with the RFC production grammar, it is must more liberal with
     # space characters, in order not to break on data made by barbarians.
-    SET_COOKIE_HEADER = """(?x) # Verbose mode
+    SET_COOKIE_HEADER = r"""(?x) # Verbose mode
         ^(?:Set-Cookie:[ ]*)?
         (?P<name>[{name}:]+)
         [ ]*=[ ]*
@@ -203,7 +203,7 @@ class Definitions(object):
     # Here is the overall date format; ~99% of cases fold into one generalized
     # syntax like RFC 1123, and many of the rest use asctime-like formats.
     # (see test_date_formats for a full exegesis)
-    DATE = """(?ix) # Case-insensitive mode, verbose mode
+    _DATE = """
         (?:
             (?P<weekday>(?:{wdy}|{weekday}),[ ])?
             (?P<day>{day})
@@ -230,11 +230,17 @@ class Definitions(object):
             (?P<year2>\d\d\d\d)
             (?:[ ]GMT)?  # GMT (Amazon)
         )
-    """
-    DATE = DATE.format(wdy=WEEKDAY_SHORT, weekday=WEEKDAY_LONG,
-                       day=DAY_OF_MONTH, mon=MONTH_SHORT, month=MONTH_LONG)
+    """.format(wdy=WEEKDAY_SHORT, weekday=WEEKDAY_LONG,
+               day=DAY_OF_MONTH, mon=MONTH_SHORT, month=MONTH_LONG)
 
-    EXPIRES_AV = "Expires=(?P<expires>%s)" % DATE
+    # Starting in Python 3.6, embedding a regex that starts with "(?ix)" in
+    # the middle of another regex produces a warning (and will stop working
+    # altogether in some future Python version).  We thus create two variables
+    # here: _DATE is for embedding inside other regexes (which must themselves
+    # begin with "(?ix)"), DATE is for standalone matching.
+    DATE = '(?ix)' + _DATE
+
+    EXPIRES_AV = "Expires=(?P<expires>%s)" % _DATE
 
     # Now we're ready to define a regexp which can match any number of attrs
     # in the variable portion of the Set-Cookie header (like the unnamed latter
@@ -263,7 +269,7 @@ class Definitions(object):
                path=PATH_AV, stuff=EXTENSION_AV)
 
     # For request data ("Cookie: ") parsing, with finditer cf. RFC 6265 4.2.1
-    COOKIE = """(?x) # Verbose mode
+    COOKIE = r"""(?x) # Verbose mode
         (?: # Either something close to valid...
 
             # Match starts at start of string, or at separator.
@@ -306,13 +312,13 @@ class Definitions(object):
     """.format(name=COOKIE_NAME, value=COOKIE_OCTET)
 
     # Precompile externally useful definitions into re objects.
-    COOKIE_NAME_RE = re.compile("^([%s:]+)\Z" % COOKIE_NAME)
+    COOKIE_NAME_RE = re.compile(r"^([%s:]+)\Z" % COOKIE_NAME)
     COOKIE_RE = re.compile(COOKIE)
     SET_COOKIE_HEADER_RE = re.compile(SET_COOKIE_HEADER)
     ATTR_RE = re.compile(ATTR)
     DATE_RE = re.compile(DATE)
     DOMAIN_RE = re.compile(DOMAIN)
-    PATH_RE = re.compile('^([%s]+)\Z' % EXTENSION_AV)
+    PATH_RE = re.compile(r'^([%s]+)\Z' % EXTENSION_AV)
     EOL = re.compile("(?:\r\n|\n)")
 
 
@@ -965,7 +971,7 @@ class Cookie(object):
         'path':     valid_path,
         'max_age':  valid_max_age,
         'comment':  valid_value,
-        'version':  lambda number: re.match("^\d+\Z", str(number)),
+        'version':  lambda number: re.match(r"^\d+\Z", str(number)),
         'secure':   lambda item: item is True or item is False,
         'httponly': lambda item: item is True or item is False,
     }
